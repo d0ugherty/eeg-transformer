@@ -6,12 +6,14 @@ import numpy as np
 import scipy.signal as signal
 
 
+"""
+    File conversion and formatting functions
+"""
+
 def gdf_to_df(file_path):
     raw_gdf = mne.io.read_raw_gdf(file_path)  # Use the full path here
     df = raw_gdf.to_data_frame()
     return df
-
-
 
 def gdf_to_csv(file_path):
     raw_gdf = mne.io.read_raw_gdf(file_path)  # Use the full path here
@@ -36,6 +38,11 @@ def format_df(df):
     df = pd.DataFrame(df.values)
     return df
 
+"""
+    no longer being used. switched to MNE's filtering functions which are faster and
+    likely much better.
+    but i hate getting rid of stuff.
+"""
 def band_pass_filter(data_arr,sampling_rate, cutoff,band_type):
     print("Applying " + band_type + " pass filter...")
     length = len(data_arr)
@@ -50,6 +57,10 @@ def band_pass_filter(data_arr,sampling_rate, cutoff,band_type):
     print(band_type + " pass filter applied.")
     return result_arr
 
+"""
+    The .gdf files have varying numbers of rows, thus their arrays will be different sizes.
+    This padding ensures that the arrays are all the same length, and fixes tensor errors.
+"""
 def pad_arrays(array):
     max_length = max(data.shape[1] for data in array)
     array = [np.pad(data, ((0, 0), (0, max_length - data.shape[1])), mode='constant') for data in array]
