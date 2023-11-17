@@ -3,11 +3,12 @@ import os
 import glob
 import pandas as pd
 import numpy as np
+import torch
 import scipy.signal as signal
 
-
 """
-    File conversion and formatting functions
+    Simple file conversion and formatting functions that may
+    or may not be needed
 """
 
 def gdf_to_df(file_path):
@@ -39,28 +40,42 @@ def format_df(df):
     return df
 
 """
-    no longer being used. switched to MNE's filtering functions which are faster and
-    likely much better.
-    but i hate getting rid of stuff.
+    Cleans the data by applying band-pass filtering 
+    dropping bad epochs
 """
-def band_pass_filter(data_arr,sampling_rate, cutoff,band_type):
-    print("Applying " + band_type + " pass filter...")
-    length = len(data_arr)
-    # nyquist frequency = sampling / 2
-    nyq = 0.5 * sampling_rate
-    # butterworth filter requires normalized values
-    normalized_cutoff = cutoff / nyq
-    b, a = signal.butter(1, normalized_cutoff, btype=band_type, analog=False)
-    result_arr = np.empty_like(data_arr)
-    for i in range(length):
-        result_arr[i] = signal.filtfilt(b, a, data_arr[i], axis=0)
-    print(band_type + " pass filter applied.")
-    return result_arr
+
+def band_pass_filter(eeg_files):
+    raw_objects = []
+    epoch_objects = []
+    for file in eeg_files:
+        raw = mne.io.read_raw_gdf(file, preload=True)
+        print(file)
+        events, event_id = mne.events_from_annotations(raw)
+        print(f'EVENT ID: {event_id}')
+        tmin, tmax = -0.3, 0.7
+        eeg_epochs = mne.Epochs(raw, events,event_id, event_repeated='merge', tmin=tmin, tmax=tmax, baseline=(None, 0), preload=True)
+        raw = raw.filter(l_freq=1.0, h_freq=40.0, verbose=False)
+        epoch_objects.append(eeg_epochs)
+        raw_objects.append(raw)
+    return raw_objects, epoch_objects
 
 """
-    The .gdf files have varying numbers of rows, thus their arrays will be different sizes.
-    This padding ensures that the arrays are all the same length, and fixes tensor errors.
+    Converts the raw data into 
+    PyTorch tensors
 """
+
+def raw_to_tensor(raw_files):
+    eeg_arrays = []
+
+    for raw in  raw_files:
+        data = raw.get_data()
+        eeg_arrays.append(data)
+
+    eeg_arrays = pad_arrays(eeg_arrays)
+    eeg_data = torch.tensor(eeg_arrays,dtype=torch.float32)
+    return eeg_data
+    
+
 def pad_arrays(array):
     max_length = max(data.shape[1] for data in array)
     array = [np.pad(data, ((0, 0), (0, max_length - data.shape[1])), mode='constant') for data in array]
