@@ -90,11 +90,15 @@ def split_data(eeg_data, file_path, ratio):
     start = 0
     for length in get_lengths(file_path):
         end = start + length
+        print(f"File length: {length}, Start: {start}, End: {end}")  # Debugging line
         file_tensor = eeg_data[start:end, :, :]
+        if file_tensor.size(0) == 0:
+            print(f"Empty tensor found for length {length}")  # Debugging line
         file_tensors.append(file_tensor)
-        start = end
+        start = 0
 
-    random.shuffle(file_tensors)
+
+    #random.shuffle(file_tensors)
     split_index = int(len(file_tensors) * ratio)
     train_files = file_tensors[:split_index]
     val_files = file_tensors[split_index:]
@@ -108,3 +112,22 @@ def get_lengths(file_path):
         length = len(raw.times)
         file_lengths.append(length)
     return file_lengths
+
+def pad_tensors(batch):
+    new_tensors = []
+    max_size = 0
+    for tensor in batch:
+        if tensor.size(0) > max_size:
+                max_size = tensor.size(0)
+    
+    for tensor in batch:
+        if tensor.size(0) < max_size:
+        
+            padding = max_size - tensor.size(0)
+            new_tensor = torch.nn.functional.pad(tensor, (padding,0,0,0))
+            new_tensors.append(new_tensor)
+        else:
+            new_tensors.append(tensor)
+    
+    return torch.stack(new_tensors)
+        
