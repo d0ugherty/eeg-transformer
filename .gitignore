@@ -4,3 +4,4 @@ eeg_data
 *.zip
 myenv
 csv
+*env
