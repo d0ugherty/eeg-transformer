@@ -4,6 +4,7 @@ import glob
 import pandas as pd
 import numpy as np
 import torch
+import random
 import scipy.signal as signal
 
 """
@@ -72,7 +73,7 @@ def raw_to_tensor(raw_files):
         eeg_arrays.append(data)
 
     eeg_arrays = pad_arrays(eeg_arrays)
-    eeg_data = torch.tensor(eeg_arrays,dtype=torch.float32)
+    eeg_data = torch.Tensor(eeg_arrays)
     return eeg_data
     
 
@@ -80,3 +81,30 @@ def pad_arrays(array):
     max_length = max(data.shape[1] for data in array)
     array = [np.pad(data, ((0, 0), (0, max_length - data.shape[1])), mode='constant') for data in array]
     return np.array(array)
+
+"""
+    Splits the data into training and validation sets
+"""
+def split_data(eeg_data, file_path, ratio):
+    file_tensors = []
+    start = 0
+    for length in get_lengths(file_path):
+        end = start + length
+        file_tensor = eeg_data[start:end, :, :]
+        file_tensors.append(file_tensor)
+        start = end
+
+    random.shuffle(file_tensors)
+    split_index = int(len(file_tensors) * ratio)
+    train_files = file_tensors[:split_index]
+    val_files = file_tensors[split_index:]
+    return train_files, val_files
+
+def get_lengths(file_path):
+    file_lengths = []
+
+    for file in file_path:
+        raw = mne.io.read_raw_gdf(file, preload=True)
+        length = len(raw.times)
+        file_lengths.append(length)
+    return file_lengths
