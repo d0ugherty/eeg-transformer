@@ -90,10 +90,8 @@ def split_data(eeg_data, file_path, ratio):
     start = 0
     for length in get_lengths(file_path):
         end = start + length
-        print(f"File length: {length}, Start: {start}, End: {end}")  # Debugging line
-        file_tensor = eeg_data[start:end, :, :]
-        if file_tensor.size(0) == 0:
-            print(f"Empty tensor found for length {length}")  # Debugging line
+        file_tensor = eeg_data[start:end, :]
+        
         file_tensors.append(file_tensor)
         start = 0
 
@@ -102,6 +100,7 @@ def split_data(eeg_data, file_path, ratio):
     split_index = int(len(file_tensors) * ratio)
     train_files = file_tensors[:split_index]
     val_files = file_tensors[split_index:]
+    
     return train_files, val_files
 
 def get_lengths(file_path):
