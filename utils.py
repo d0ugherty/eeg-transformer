@@ -70,6 +70,7 @@ def raw_to_tensor(raw_files):
 
     for raw in  raw_files:
         data = raw.get_data()
+        #print(f'From Raw: {data}')
         eeg_arrays.append(data)
 
     eeg_arrays = pad_arrays(eeg_arrays)
@@ -96,7 +97,7 @@ def split_data(eeg_data, file_path, ratio):
         start = 0
 
 
-    #random.shuffle(file_tensors)
+    random.shuffle(file_tensors)
     split_index = int(len(file_tensors) * ratio)
     train_files = file_tensors[:split_index]
     val_files = file_tensors[split_index:]
@@ -129,4 +130,98 @@ def pad_tensors(batch):
             new_tensors.append(tensor)
     
     return torch.stack(new_tensors)
-        
+
+
+def split_tensor(tensor, split_size):
+    """
+    Splits a tensor into smaller tensors of a specified size along the second dimension.
+
+    Args:
+    - tensor (torch.Tensor): The tensor to split.
+    - split_size (int): The size of each split along the second dimension.
+
+    Returns:
+    - List[torch.Tensor]: A list of smaller tensors.
+    """
+    # Number of splits
+    num_splits = tensor.shape[1] // split_size
+
+    # Split the tensor
+    splits = torch.split(tensor, split_size, dim=1)
+
+    # If the original tensor is not perfectly divisible by the split size,
+    # we discard the last, potentially smaller chunk
+    if len(splits) > num_splits:
+        splits = splits[:num_splits]
+
+    return splits
+
+def time_shift(eeg_data, shift):
+    """
+    Shifts the EEG data in time.
+
+    Args:
+    eeg_data (np.array): The EEG data array.
+    shift (int): Number of time steps to shift (can be negative for backward shift).
+
+    Returns:
+    np.array: Time-shifted EEG data.
+    """
+    return np.roll(eeg_data, shift, axis=1)
+
+def add_noise(eeg_data, noise_level):
+    """
+    Adds random noise to the EEG data.
+
+    Args:
+    eeg_data (np.array): The EEG data array.
+    noise_level (float): The standard deviation of the Gaussian noise to add.
+
+    Returns:
+    np.array: EEG data with added noise.
+    """
+    noise = np.random.normal(0, noise_level, eeg_data.shape)
+    return eeg_data + noise
+
+
+def time_warp(eeg_data, factor):
+    """
+    Warps the EEG data in time (speed up or slow down) for each channel.
+
+    Args:
+    eeg_data (np.array): The EEG data array, shape [channels, time_points].
+    factor (float): Time warp factor (>1 for speeding up, <1 for slowing down).
+
+    Returns:
+    np.array: Time-warped EEG data.
+    """
+    if eeg_data.ndim != 2:
+        raise ValueError("eeg_data should be a 2D array")
+
+    num_channels, time_points = eeg_data.shape
+    new_time_points = int(time_points * factor)
+    warped_data = np.zeros((num_channels, new_time_points))
+
+    for i in range(num_channels):
+        warped_data[i, :] = np.interp(
+            np.linspace(0, time_points, new_time_points),
+            np.arange(time_points),
+            eeg_data[i, :]
+        )
+    return warped_data
+
+def augment_data(data, augmentations):
+    """
+    Apply a series of augmentations to a data.
+
+    Args:
+    data (np.array): The data data to augment.
+    augmentations (list of functions): List of augmentation functions to apply.
+
+    Returns:
+    np.array: Augmented data data.
+    """
+    augmented_data = data.copy()
+    for augmentation in augmentations:
+        augmented_data = augmentation(augmented_data)
+    return augmented_data
