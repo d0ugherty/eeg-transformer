@@ -55,7 +55,7 @@ def band_pass_filter(eeg_files):
         print(f'EVENT ID: {event_id}')
         tmin, tmax = -0.3, 0.7
         eeg_epochs = mne.Epochs(raw, events,event_id, event_repeated='merge', tmin=tmin, tmax=tmax, baseline=(None, 0), preload=True)
-        raw = raw.filter(l_freq=1.0, h_freq=40.0, verbose=False)
+        raw = raw.filter(l_freq=.1, h_freq=40.0, verbose=False)
         epoch_objects.append(eeg_epochs)
         raw_objects.append(raw)
     return raw_objects, epoch_objects
