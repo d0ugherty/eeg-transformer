@@ -131,33 +131,36 @@ def pad_tensors(batch):
     
     return torch.stack(new_tensors)
 
-
+"""
+    Splits a tensor into smaller tensors of a specified size along the second dimension.
+"""
 def split_tensor(tensor, split_size):
-
     num_splits = tensor.shape[1] // split_size
-
     splits = torch.split(tensor, split_size, dim=1)
-
     if len(splits) > num_splits:
         splits = splits[:num_splits]
 
     return splits
-
+    
+"""
+    Shifts the EEG data in time.
+"""
 def time_shift(eeg_data, shift):
-
     return np.roll(eeg_data, shift, axis=1)
 
+"""
+    Adds random noise to the EEG data.
+"""
 def add_noise(eeg_data, noise_level):
-
     noise = np.random.normal(0, noise_level, eeg_data.shape)
     return eeg_data + noise
 
-
+"""
+    Warps the EEG data in time (speed up or slow down) for each channel.
+"""
 def time_warp(eeg_data, factor):
-
     if eeg_data.ndim != 2:
         raise ValueError("eeg_data should be a 2D array")
-
     num_channels, time_points = eeg_data.shape
     new_time_points = int(time_points * factor)
     warped_data = np.zeros((num_channels, new_time_points))
@@ -170,8 +173,10 @@ def time_warp(eeg_data, factor):
         )
     return warped_data
 
+"""
+    Apply a series of augmentations to a data.
+"""
 def augment_data(data, augmentations):
-
     augmented_data = data.copy()
     for augmentation in augmentations:
         augmented_data = augmentation(augmented_data)
